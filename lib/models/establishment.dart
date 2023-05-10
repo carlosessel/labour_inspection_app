@@ -9,7 +9,7 @@ class Establishment {
   String? email;
   int? establishmentTypeId;
   int? industryId;
-  int? accomodationTypeId;
+  int? accommodationTypeId;
   String? mainActivityUndertaken;
   DateTime? businessRegistrationDate;
   String? registrationPlace;
@@ -26,11 +26,13 @@ class Establishment {
       this.email,
       this.establishmentTypeId,
       this.industryId,
-      this.accomodationTypeId,
+      this.accommodationTypeId,
       this.mainActivityUndertaken,
       this.businessRegistrationDate,
       this.registrationPlace,
       this.businessCommencementDate});
+
+  
 
   factory Establishment.fromJson(Map<String, dynamic> json) {
     return Establishment(
@@ -44,7 +46,7 @@ class Establishment {
         email: json['email'],
         establishmentTypeId: json['establishmentTypeId'],
         industryId: json['industryId'],
-        accomodationTypeId: json['accomodationTypeId'],
+        accommodationTypeId: json['accomodationTypeId'],
         mainActivityUndertaken: json['mainActivityUndertaken'],
         businessRegistrationDate:
             DateTime.parse(json['businessRegistrationDate']),
@@ -65,11 +67,13 @@ class Establishment {
       'email': email,
       'establishmentTypeId': establishmentTypeId,
       'industryId': industryId,
-      'accomodationTypeId': accomodationTypeId,
+      'accommodationTypeId': accommodationTypeId,
       'mainActivityUndertaken': mainActivityUndertaken,
-      'businessRegistrationDate': businessRegistrationDate?.toIso8601String().replaceAll('.000', ''),
+      'businessRegistrationDate':
+          businessRegistrationDate?.toIso8601String().replaceAll('.000', ''),
       'registrationPlace': registrationPlace,
-      'businessCommencementDate': businessCommencementDate?.toIso8601String().replaceAll('.000', ''),
+      'businessCommencementDate':
+          businessCommencementDate?.toIso8601String().replaceAll('.000', ''),
     };
   }
 }

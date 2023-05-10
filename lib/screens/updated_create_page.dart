@@ -1,3 +1,4 @@
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:datetime_picker_formfield_new/datetime_picker_formfield.dart';
 import 'package:flutter/material.dart';
 import 'package:email_validator/email_validator.dart';
@@ -6,7 +7,14 @@ import 'package:http/http.dart' as http;
 import 'package:labour_inspection/services/labour_inspection_api.dart';
 import 'dart:convert';
 
+import '../models/accommodation_type.dart';
+import '../models/district.dart';
 import '../models/establishment.dart';
+import '../models/establishment_Type.dart';
+import '../models/industry.dart';
+import '../models/ownership_type.dart';
+import '../models/region.dart';
+import '../services/sqlite_service.dart';
 
 class CreateEstablishmentPage extends StatefulWidget {
   @override
@@ -43,65 +51,256 @@ class _CreateEstablishmentPageState extends State<CreateEstablishmentPage> {
       TextEditingController();
 
   late Establishment _establishment;
+  
+  final SqliteService _sqliteService = SqliteService();
+
+  List<District> districts = [];
+  List<Region> regions = [];
+  List<Industry> industries = [];
+  List<EstablishmentType> establishmentTypes = [];
+  List<AccommodationType> accommodationTypes = [];
+  List<OwnershipType> ownershipTypes = [];
 
   late int _currentPage;
 
-  final List<String> _ownershipTypes = [
-    'Sole Proprietorship',
-    'Partnership',
-    'Limited Liability Company',
-    'Corporation',
-    'Non-Profit Organization'
-  ];
+  // final List<String> _ownershipTypes = [
+  //   'Sole Proprietorship',
+  //   'Partnership',
+  //   'Limited Liability Company',
+  //   'Corporation',
+  //   'Non-Profit Organization'
+  // ];
+  //
+  // final List<String> _establishmentTypes = [
+  //   'Hotel',
+  //   'Restaurant',
+  //   'Retail Store',
+  //   'Service Provider',
+  //   'Manufacturer'
+  // ];
+  //
+  // final List<String> _accommodationTypes = [
+  //   'Hotel',
+  //   'Motel',
+  //   'Inn',
+  //   'Resort',
+  //   'Vacation Rental'
+  // ];
+  //
+  // final List<String> _industries = [
+  //   'Technology',
+  //   'Finance',
+  //   'Healthcare',
+  //   'Education',
+  //   'Manufacturing',
+  //   'Retail',
+  //   'Hospitality'
+  // ];
+  //
+  // final List<String> _regions = [
+  //   'Region 1',
+  //   'Region 2',
+  //   'Region 3',
+  //   'Region 4',
+  //   'Region 5'
+  // ];
 
-  final List<String> _establishmentTypes = [
-    'Hotel',
-    'Restaurant',
-    'Retail Store',
-    'Service Provider',
-    'Manufacturer'
-  ];
-
-  final List<String> _accommodationTypes = [
-    'Hotel',
-    'Motel',
-    'Inn',
-    'Resort',
-    'Vacation Rental'
-  ];
-
-  final List<String> _industries = [
-    'Technology',
-    'Finance',
-    'Healthcare',
-    'Education',
-    'Manufacturing',
-    'Retail',
-    'Hospitality'
-  ];
-
-  final List<String> _regions = [
-    'Region 1',
-    'Region 2',
-    'Region 3',
-    'Region 4',
-    'Region 5'
-  ];
-
-  final List<String> _districts = [
-    'District 1',
-    'District 2',
-    'District 3',
-    'District 4',
-    'District 5'
-  ];
+  // final List<String> _districts = [
+  //   'District 1',
+  //   'District 2',
+  //   'District 3',
+  //   'District 4',
+  //   'District 5'
+  // ];
 
   @override
   void initState() {
     super.initState();
     _establishment = Establishment();
     _currentPage = 0;
+    _getDistrictsData();
+    _getRegionsData();
+    _getIndustryData();
+    _getAccommodationTypeData();
+    _getEstablishmentTypeData();
+    _getOwnershipTypeData();
   }
+
+  //Get District Data
+  Future<void> _getDistrictsData() async{
+
+    final connectivityResult = await (Connectivity().checkConnectivity());
+
+    if (connectivityResult == ConnectivityResult.mobile || connectivityResult == ConnectivityResult.wifi) {
+
+      Future<List<District>> _districts = LabourInspectionApi.getDistricts();
+      setState(() async {
+        districts = await _districts;
+      });
+
+      _districts.then((value) => value.forEach((element) {
+        _sqliteService.insertDistrict(element);
+      }));
+
+    }
+    else
+    {
+      _sqliteService.initializeDB().whenComplete(() async {
+        final data = await _sqliteService.getDistrictItems();
+        setState(() {
+          districts = data;
+        });
+      });
+    }
+    setState(() {});
+  }
+
+  //Get Region Data
+  Future<void> _getRegionsData() async{
+
+    final connectivityResult = await (Connectivity().checkConnectivity());
+
+    if (connectivityResult == ConnectivityResult.mobile || connectivityResult == ConnectivityResult.wifi) {
+
+      Future<List<Region>> _regions = LabourInspectionApi.getRegions();
+      setState(() async {
+        regions = await _regions;
+      });
+
+      _regions.then((value) => value.forEach((element) {
+        _sqliteService.insertRegion(element);
+      }));
+
+    }
+    else
+    {
+      _sqliteService.initializeDB().whenComplete(() async {
+        final data = await _sqliteService.getRegionItems();
+        setState(() {
+          regions = data;
+        });
+      });
+    }
+    setState(() {});
+  }
+
+  //Get Industry Data
+  Future<void> _getIndustryData() async{
+
+    final connectivityResult = await (Connectivity().checkConnectivity());
+
+    if (connectivityResult == ConnectivityResult.mobile || connectivityResult == ConnectivityResult.wifi) {
+
+      Future<List<Industry>> _industries = LabourInspectionApi.getIndustries();
+      setState(() async {
+        industries = await _industries;
+      });
+
+      _industries.then((value) => value.forEach((element) {
+        _sqliteService.insertIndustry(element);
+      }));
+
+    }
+    else
+    {
+      _sqliteService.initializeDB().whenComplete(() async {
+        final data = await _sqliteService.getIndustryItems();
+        setState(() {
+          industries = data;
+        });
+      });
+    }
+    setState(() {});
+  }
+
+  //Get AccommodationType Data
+  Future<void> _getAccommodationTypeData() async{
+
+    final connectivityResult = await (Connectivity().checkConnectivity());
+
+    if (connectivityResult == ConnectivityResult.mobile || connectivityResult == ConnectivityResult.wifi) {
+
+      Future<List<AccommodationType>> _accommodationTypes = LabourInspectionApi.getAccommodationTypes();
+      setState(() async {
+        accommodationTypes = await _accommodationTypes;
+      });
+
+      _accommodationTypes.then((value) => value.forEach((element) {
+        _sqliteService.insertAccommodationType(element);
+      }));
+
+    }
+    else
+    {
+      _sqliteService.initializeDB().whenComplete(() async {
+        final data = await _sqliteService.getAccommodationTypeItems();
+        setState(() {
+          accommodationTypes = data;
+        });
+      });
+    }
+    setState(() {});
+  }
+
+  //Get EstablishmentType Data
+  Future<void> _getEstablishmentTypeData() async{
+
+    final connectivityResult = await (Connectivity().checkConnectivity());
+
+    if (connectivityResult == ConnectivityResult.mobile || connectivityResult == ConnectivityResult.wifi) {
+
+      Future<List<EstablishmentType>> _establishmentTypes = LabourInspectionApi.getEstablishmentTypes();
+      setState(() async {
+        establishmentTypes = await _establishmentTypes;
+      });
+
+      _establishmentTypes.then((value) => value.forEach((element) {
+        _sqliteService.insertEstablishmentType(element);
+      }));
+
+    }
+    else
+    {
+      _sqliteService.initializeDB().whenComplete(() async {
+        final data = await _sqliteService.getEstablishmentTypeItems();
+        setState(() {
+          establishmentTypes = data;
+        });
+      });
+    }
+    setState(() {});
+  }
+
+  //Get OwnershipType Data
+  Future<void> _getOwnershipTypeData() async{
+
+    final connectivityResult = await (Connectivity().checkConnectivity());
+
+    if (connectivityResult == ConnectivityResult.mobile || connectivityResult == ConnectivityResult.wifi) {
+
+      Future<List<OwnershipType>> _ownershipTypes = LabourInspectionApi.getOwnershipTypes();
+      setState(() async {
+        ownershipTypes = await _ownershipTypes;
+      });
+
+      _ownershipTypes.then((value) => value.forEach((element) {
+        _sqliteService.insertOwnershipType(element);
+      }));
+
+    }
+    else
+    {
+      _sqliteService.initializeDB().whenComplete(() async {
+        final data = await _sqliteService.getOwnershipTypeItems();
+        setState(() {
+          ownershipTypes = data;
+        });
+      });
+    }
+    setState(() {});
+  }
+
+  
 
   void _goToNextPage() {
     if (_formKey.currentState!.validate()) {
@@ -119,33 +318,38 @@ class _CreateEstablishmentPageState extends State<CreateEstablishmentPage> {
   }
 
   void _submitForm() async {
-    LabourInspectionApi.createEstablishment(_establishment);
-    // if (_formKey.currentState!.validate()) {
-    //   _formKey.currentState!.save();
+    if (_formKey.currentState!.validate()) {
+      _formKey.currentState!.save();
 
-    //   final response = await http.post(
-    //     Uri.parse('https://localhost/api/establishments'),
-    //     headers: {
-    //       'Content-Type': 'application/json',
-    //     },
-    //     body: jsonEncode(_establishment.toJson()),
-    //   );
+      final connectivityResult = await (Connectivity().checkConnectivity());
 
-    //   if (response.statusCode == 201) {
-    //     Navigator.pop(context);
-    //   } else {
-    //     ScaffoldMessenger.of(context).showSnackBar(
-    //       SnackBar(content: Text('Failed to create establishment')),
-    //     );
-    //   }
-    // }
+      _sqliteService.insertEstablishment(_establishment);
+
+      if (connectivityResult == ConnectivityResult.mobile || connectivityResult == ConnectivityResult.wifi){
+        final response = await http.post(
+          Uri.parse('https://localhost:7283/api/establishments'),
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode(_establishment.toJson()),
+        );
+
+        if (response.statusCode == 201) {
+          Navigator.pop(context);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to create establishment')),
+          );
+        }
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
-          title: Text('Create Establishment'),
+          title: const Text('Create Establishment'),
         ),
         bottomNavigationBar: BottomAppBar(
           child: Row(
@@ -153,17 +357,17 @@ class _CreateEstablishmentPageState extends State<CreateEstablishmentPage> {
             children: <Widget>[
               if (_currentPage != 0)
                 IconButton(
-                  icon: Icon(Icons.arrow_back),
+                  icon: const Icon(Icons.arrow_back),
                   onPressed: _goToPreviousPage,
                 ),
               if (_currentPage != 2) const SizedBox(),
               TextButton(
-                child: Text('Next'),
+                child: const Text('Next'),
                 onPressed: _goToNextPage,
               ),
               if (_currentPage == 2)
                 ElevatedButton(
-                  child: Text('Submit'),
+                  child: const Text('Submit'),
                   onPressed: _submitForm,
                 ),
             ],
@@ -184,7 +388,7 @@ class _CreateEstablishmentPageState extends State<CreateEstablishmentPage> {
                             ),
                             TextFormField(
                               controller: _establishmentNameController,
-                              decoration: InputDecoration(
+                              decoration: const InputDecoration(
                                 labelText: 'Establishment Name',
                               ),
                               validator: (value) {
@@ -199,16 +403,14 @@ class _CreateEstablishmentPageState extends State<CreateEstablishmentPage> {
                             ),
                             DropdownButtonFormField(
                               value: _establishment.ownerShipTypeId,
-                              decoration: InputDecoration(
+                              decoration: const InputDecoration(
                                 labelText: 'Ownership Type',
                               ),
-                              items: _ownershipTypes
+                              items: ownershipTypes
                                   .map(
                                     (ownershipType) => DropdownMenuItem(
-                                      child: Text(ownershipType),
-                                      value: _ownershipTypes
-                                              .indexOf(ownershipType) +
-                                          1,
+                                      value: ownershipType.ownershipTypeId,
+                                      child: Text(ownershipType.ownershipTypeName!),
                                     ),
                                   )
                                   .toList(),
@@ -227,16 +429,14 @@ class _CreateEstablishmentPageState extends State<CreateEstablishmentPage> {
                             ),
                             DropdownButtonFormField(
                               value: _establishment.establishmentTypeId,
-                              decoration: InputDecoration(
+                              decoration: const InputDecoration(
                                 labelText: 'Establishment Type',
                               ),
-                              items: _establishmentTypes
+                              items: establishmentTypes
                                   .map(
                                     (establishmentType) => DropdownMenuItem(
-                                      child: Text(establishmentType),
-                                      value: _establishmentTypes
-                                              .indexOf(establishmentType) +
-                                          1,
+                                      value: establishmentType.establishmentTypeId,
+                                      child: Text(establishmentType.establishmentTypeName!),
                                     ),
                                   )
                                   .toList(),
@@ -254,23 +454,21 @@ class _CreateEstablishmentPageState extends State<CreateEstablishmentPage> {
                               },
                             ),
                             DropdownButtonFormField(
-                              value: _establishment.accomodationTypeId,
-                              decoration: InputDecoration(
+                              value: _establishment.accommodationTypeId,
+                              decoration: const InputDecoration(
                                 labelText: 'Accommodation Type',
                               ),
-                              items: _accommodationTypes
+                              items: accommodationTypes
                                   .map(
                                     (accommodationType) => DropdownMenuItem(
-                                      child: Text(accommodationType),
-                                      value: _accommodationTypes
-                                              .indexOf(accommodationType) +
-                                          1,
+                                      value: accommodationType.accommodationTypeId,
+                                      child: Text(accommodationType.accommodationTypeName!),
                                     ),
                                   )
                                   .toList(),
                               onChanged: (value) {
                                 setState(() {
-                                  _establishment.accomodationTypeId =
+                                  _establishment.accommodationTypeId =
                                       value as int?;
                                 });
                               },
@@ -283,14 +481,14 @@ class _CreateEstablishmentPageState extends State<CreateEstablishmentPage> {
                             ),
                             DropdownButtonFormField(
                               value: _establishment.regionId,
-                              decoration: InputDecoration(
+                              decoration: const InputDecoration(
                                 labelText: 'Region',
                               ),
-                              items: _regions
+                              items: regions
                                   .map(
                                     (region) => DropdownMenuItem(
-                                      child: Text(region),
-                                      value: _regions.indexOf(region) + 1,
+                                      value: region.regionId,
+                                      child: Text(region.regionName!),
                                     ),
                                   )
                                   .toList(),
@@ -308,14 +506,14 @@ class _CreateEstablishmentPageState extends State<CreateEstablishmentPage> {
                             ),
                             DropdownButtonFormField(
                               value: _establishment.districtId,
-                              decoration: InputDecoration(
+                              decoration: const InputDecoration(
                                 labelText: 'District',
                               ),
-                              items: _districts
+                              items: districts
                                   .map(
                                     (district) => DropdownMenuItem(
-                                      child: Text(district),
-                                      value: _districts.indexOf(district) + 1,
+                                      child: Text(district.districtName!),
+                                      value: district.districtId
                                     ),
                                   )
                                   .toList(),
@@ -333,7 +531,7 @@ class _CreateEstablishmentPageState extends State<CreateEstablishmentPage> {
                             ),
                             TextFormField(
                               controller: _localityController,
-                              decoration: InputDecoration(
+                              decoration: const InputDecoration(
                                 labelText: 'Locality',
                               ),
                               validator: (value) {
@@ -348,7 +546,7 @@ class _CreateEstablishmentPageState extends State<CreateEstablishmentPage> {
                             ),
                             TextFormField(
                               controller: _addressController,
-                              decoration: InputDecoration(
+                              decoration: const InputDecoration(
                                 labelText: 'Address',
                               ),
                               validator: (value) {
@@ -370,7 +568,7 @@ class _CreateEstablishmentPageState extends State<CreateEstablishmentPage> {
                             TextFormField(
                               controller: _phoneNumberController,
                               keyboardType: TextInputType.phone,
-                              decoration: InputDecoration(
+                              decoration: const InputDecoration(
                                 labelText: 'Phone Number',
                               ),
                               validator: (value) {
@@ -386,7 +584,7 @@ class _CreateEstablishmentPageState extends State<CreateEstablishmentPage> {
                             TextFormField(
                               controller: _emailController,
                               keyboardType: TextInputType.emailAddress,
-                              decoration: InputDecoration(
+                              decoration: const InputDecoration(
                                 labelText: 'Email',
                               ),
                               validator: (value) {
@@ -403,20 +601,20 @@ class _CreateEstablishmentPageState extends State<CreateEstablishmentPage> {
                             ),
                             DropdownButtonFormField(
                               value: _establishment.industryId,
-                              decoration: InputDecoration(
+                              decoration: const InputDecoration(
                                 labelText: 'Industry',
                               ),
-                              items: _industries
+                              items: industries
                                   .map(
                                     (industry) => DropdownMenuItem(
-                                      child: Text(industry),
-                                      value: _industries.indexOf(industry) + 1,
+                                      value: industry.industryId,
+                                      child: Text(industry.industryName!),
                                     ),
                                   )
                                   .toList(),
                               onChanged: (value) {
                                 setState(() {
-                                  _establishment.industryId = value as int?;
+                                  _establishment.industryId = value;
                                 });
                               },
                               validator: (value) {
@@ -428,7 +626,7 @@ class _CreateEstablishmentPageState extends State<CreateEstablishmentPage> {
                             ),
                             TextFormField(
                               controller: _mainActivityController,
-                              decoration: InputDecoration(
+                              decoration: const InputDecoration(
                                 labelText: 'Main Activity Undertaken',
                               ),
                               validator: (value) {
@@ -495,10 +693,10 @@ class _CreateEstablishmentPageState extends State<CreateEstablishmentPage> {
                             //         value!;
                             //   },
                             // ),
-                            SizedBox(height: 16),
+                            const SizedBox(height: 16),
                             TextFormField(
                               controller: _registrationPlaceController,
-                              decoration: InputDecoration(
+                              decoration: const InputDecoration(
                                 labelText: 'Registration Place',
                               ),
                               validator: (value) {
@@ -511,7 +709,7 @@ class _CreateEstablishmentPageState extends State<CreateEstablishmentPage> {
                                 _establishment.registrationPlace = value!;
                               },
                             ),
-                            SizedBox(height: 16),
+                            const SizedBox(height: 16),
                             DateTimeField(
                               decoration: const InputDecoration(
                                   labelText: 'Business Commencement Date'),
@@ -546,12 +744,17 @@ class _CreateEstablishmentPageState extends State<CreateEstablishmentPage> {
                                 }
                               },
                             ),
-                            SizedBox(height: 32),
+                            const SizedBox(height: 32),
                             ElevatedButton(
                               onPressed: _submitForm,
-                              child: Text('Submit'),
+                              child: const Text('Submit'),
                             ),
                           ]
-                        ])))));
+                        ]
+                    )
+                )
+            )
+        )
+    );
   }
 }

@@ -1,8 +1,10 @@
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
-import 'package:labour_inspection/screens/add_establishment_page.dart';
+import 'package:labour_inspection/screens/gpttest.dart';
 import 'package:labour_inspection/screens/paginated_create_page.dart';
 import 'package:labour_inspection/screens/updated_create_page.dart';
 import 'package:labour_inspection/services/labour_inspection_api.dart';
+import 'package:labour_inspection/services/sqlite_service.dart';
 
 import '../models/establishment.dart';
 
@@ -14,46 +16,110 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  late Future<List<Establishment>> _establishments;
+  // late List<Establishment> _establishments;
+
+  final SqliteService _sqliteService = SqliteService();
   late Future<List<Establishment>> _futureEstablishments;
 
   @override
-  void initState() {
+  initState() {
     super.initState();
-    setState(() {
+    _getData();
+  }
+
+  Future<void> _getData() async {
+    final connectivityResult = await (Connectivity().checkConnectivity());
+
+    if (connectivityResult == ConnectivityResult.mobile ||
+        connectivityResult == ConnectivityResult.wifi) {
       _futureEstablishments = LabourInspectionApi.getEstablishments();
-    });
+
+      _futureEstablishments.then((value) => value.forEach((element) {
+            _sqliteService.insertEstablishment(element);
+          }));
+
+      setState(() {
+        _establishments = _futureEstablishments;
+      });
+    } else {
+      _sqliteService.initializeDB().whenComplete(() async {
+        final data = _sqliteService.getEstablishmentItems();
+        setState(() {
+          _establishments = data;
+        });
+      });
+    }
+    setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        // elevation: 0,
+        // backgroundColor: Colors.white,
+        title: const Text('Labour Inspection'),
+        leading: Builder(
+          builder: (BuildContext context) {
+            return IconButton(
+              icon: const Icon(Icons.menu),
+              onPressed: () {
+                // open side navbar
+                Scaffold.of(context).openDrawer();
+              },
+            );
+          },
+        ),
+        // actions: [
+        //   IconButton(onPressed: (){}, icon: const Icon(Icons.search_outlined))
+        // ],
+        // actions: [
+        //   Padding(
+        //     padding: const EdgeInsets.symmetric(horizontal: 10),
+        //     child: CircleAvatar(
+        //       radius: 25,
+        //       backgroundImage: const AssetImage('assets/images/avatar.jpg'),
+        //       child: Container(
+        //           decoration: const BoxDecoration(
+        //             shape: BoxShape.circle,
+        //             image: DecorationImage(
+        //               image: AssetImage('assets/images/avatar.jpg'),
+        //               fit: BoxFit.fill,
+        //             ),
+        //           )
+        //       ),
+        //     ),
+        //   )
+        // ],
+      ),
       body: Column(
         children: [
-          const SizedBox(height: 30),
+          const SizedBox(height: 10),
 
           //Menu and avatar
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Icon(Icons.menu),
-                CircleAvatar(
-                  radius: 30,
-                  backgroundImage: const AssetImage('assets/images/avatar.jpg'),
-                  child: Container(
-                      decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    image: DecorationImage(
-                      image: AssetImage('assets/images/avatar.jpg'),
-                      fit: BoxFit.fill,
-                    ),
-                  )),
-                ),
-              ],
-            ),
-          ),
+          // Container(
+          //   margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          //   padding: const EdgeInsets.symmetric(horizontal: 10),
+          //   child: Row(
+          //     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          //     children: [
+          //       IconButton(onPressed: (){Scaffold.of(context).openDrawer();}, icon: const Icon(Icons.menu)),
+          //       CircleAvatar(
+          //         radius: 30,
+          //         backgroundImage: const AssetImage('assets/images/avatar.jpg'),
+          //         child: Container(
+          //             decoration: const BoxDecoration(
+          //           shape: BoxShape.circle,
+          //           image: DecorationImage(
+          //             image: AssetImage('assets/images/avatar.jpg'),
+          //             fit: BoxFit.fill,
+          //           ),
+          //         )),
+          //       ),
+          //     ],
+          //   ),
+          // ),
 
           //search
           Container(
@@ -124,7 +190,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
           //view all
           GestureDetector(
-            onTap: () => {},
+            onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => const PaginatedListView())),
             child: Container(
               padding: const EdgeInsets.all(5),
               width: MediaQuery.of(context).size.width * 0.9,
@@ -147,9 +216,23 @@ class _HomeScreenState extends State<HomeScreen> {
           //list
           Expanded(
             child: Container(
-              color: Color.fromARGB(255, 226, 222, 222),
+              color: const Color.fromARGB(255, 226, 222, 222),
+              // child: ListView.builder(
+              //   itemCount: _establishments.length,
+              //   itemBuilder: (BuildContext context, int index) {
+              //     return ItemTile(
+              //         establishmentName:
+              //             _establishments[index].establishmentName,
+              //         establishmentAddress:
+              //             _establishments[index].address,
+              //         establishmentPhoneNumber:
+              //             _establishments[index].phoneNumber,
+              //         establishmentEmail:
+              //            _establishments[index].email);
+              //   },
+              // ),
               child: FutureBuilder<List<Establishment>>(
-                future: _futureEstablishments,
+                future: _establishments,
                 builder: (context, snapshot) {
                   if (snapshot.hasData) {
                     List<Establishment> establishments = snapshot.data!;
@@ -169,7 +252,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       },
                     );
                   } else if (snapshot.hasError) {
-                    return Text("${snapshot.error}");
+                    return Text(
+                        "${snapshot.error} \n \n An error occured, check internet connection");
                   }
                   return SizedBox(
                       height: MediaQuery.of(context).size.height * 0.4,
@@ -179,6 +263,68 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           )
         ],
+      ),
+      drawer: Drawer(
+        backgroundColor: Color.fromARGB(255, 56, 137, 220),
+        child: ListView(children: [
+          DrawerHeader(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                CircleAvatar(
+                  backgroundColor: Colors.white,
+                  radius: 30,
+                  // backgroundImage: const AssetImage('assets/images/avatar.jpg'),
+                  child: Container(
+                      decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                  )),
+                ),
+                const SizedBox(height: 10.0),
+                const Text(
+                  'Username',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                  ),
+                )
+              ],
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.home_outlined, color: Colors.white),
+            title: const Text(
+              'Home',
+              style: TextStyle(color: Colors.white),
+            ),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const HomeScreen()),
+            ),
+          ),
+          ListTile(
+            leading:
+                const Icon(Icons.business_center_outlined, color: Colors.white),
+            title: const Text(
+              'Register Establishment',
+              style: TextStyle(color: Colors.white),
+            ),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => CreateEstablishmentPage()),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.settings_outlined, color: Colors.white),
+            title: const Text(
+              'Settings',
+              style: TextStyle(color: Colors.white),
+            ),
+            onTap: () {},
+          ),
+          const Divider()
+        ]),
       ),
       floatingActionButton: GestureDetector(
         onTap: () => Navigator.push(
@@ -237,7 +383,7 @@ class ItemTile extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        establishmentName!,
+                        '$establishmentName',
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(
@@ -248,7 +394,7 @@ class ItemTile extends StatelessWidget {
                         style: const TextStyle(fontSize: 12.0),
                       ),
                       Text(
-                        establishmentEmail!,
+                        '$establishmentEmail',
                         style: const TextStyle(fontSize: 12.0),
                       ),
                       const SizedBox(
